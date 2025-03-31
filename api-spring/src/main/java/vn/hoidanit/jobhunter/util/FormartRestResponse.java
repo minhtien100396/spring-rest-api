@@ -20,8 +20,13 @@ public class FormartRestResponse implements ResponseBodyAdvice<Object> {
     }
 
     @Override
-    public Object beforeBodyWrite(Object body, MethodParameter returnType, MediaType selectedContentType,
-            Class selectedConverterType, ServerHttpRequest request, ServerHttpResponse response) {
+    public Object beforeBodyWrite(
+            Object body,
+            MethodParameter returnType,
+            MediaType selectedContentType,
+            Class selectedConverterType,
+            ServerHttpRequest request,
+            ServerHttpResponse response) {
 
         HttpServletResponse servletResponse = ((ServletServerHttpResponse) response).getServletResponse();
 
@@ -29,6 +34,11 @@ public class FormartRestResponse implements ResponseBodyAdvice<Object> {
 
         RestResponse<Object> res = new RestResponse<>();
         res.setStatusCode(status);
+
+        // Loi khi catch tu RestResponse sang String
+        if (body instanceof String) {
+            return body;
+        }
 
         if (status >= 400) {
             // case error
