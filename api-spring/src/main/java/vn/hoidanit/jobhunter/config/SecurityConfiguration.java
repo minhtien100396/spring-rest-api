@@ -48,7 +48,7 @@ public class SecurityConfiguration {
                 .authorizeHttpRequests(
                         authz -> authz
                                 // khong can xac thuc van truy cap duoc
-                                .requestMatchers("/", "/login").permitAll()
+                                .requestMatchers("/", "/api/v1/login").permitAll()
                                 // phai xac thuc moi duoc truy cap
                                 .anyRequest().authenticated())
                 // dung de xac thuc nguoi dung thong qua ham jwtDecoder()

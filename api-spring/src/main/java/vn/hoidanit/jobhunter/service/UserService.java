@@ -1,12 +1,21 @@
 package vn.hoidanit.jobhunter.service;
 
+import java.util.List;
+import java.util.stream.Collector;
+import java.util.stream.Collectors;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
+import jakarta.validation.Valid;
 import vn.hoidanit.jobhunter.domain.User;
 import vn.hoidanit.jobhunter.domain.dto.Meta;
+import vn.hoidanit.jobhunter.domain.dto.ResCreateUserDTO;
+import vn.hoidanit.jobhunter.domain.dto.ResUpdateUserDTO;
+import vn.hoidanit.jobhunter.domain.dto.ResUpdateUsetDTO;
+import vn.hoidanit.jobhunter.domain.dto.ResUserDTO;
 import vn.hoidanit.jobhunter.domain.dto.ResultPaginationDTO;
 import vn.hoidanit.jobhunter.repository.UserRepository;
 
@@ -51,14 +60,27 @@ public class UserService {
         ResultPaginationDTO rDto = new ResultPaginationDTO();
         Meta mt = new Meta();
 
-        mt.setPage(pageUser.getNumber() + 1);
-        mt.setPageSize(pageUser.getSize());
+        mt.setPage(pageable.getPageNumber() + 1);
+        mt.setPageSize(pageable.getPageSize());
 
         mt.setPages(pageUser.getTotalPages());
         mt.setTotal(pageUser.getTotalElements());
 
         rDto.setMeta(mt);
-        rDto.setResult(pageUser.getContent());
+
+        List<ResUserDTO> listUser = pageUser.getContent().stream()
+                .map(item -> new ResUserDTO(
+                        item.getId(),
+                        item.getName(),
+                        item.getEmail(),
+                        item.getAge(),
+                        item.getGender(),
+                        item.getAddress(),
+                        item.getCreatedAt(),
+                        item.getUpdatedAt()))
+                .collect(Collectors.toList());
+
+        rDto.setResult(listUser);
 
         return rDto;
     }
@@ -66,16 +88,59 @@ public class UserService {
     public User handleUpdateUser(User user) {
         User userCurrent = userRepository.findById(user.getId()).orElse(null);
         if (userCurrent != null) {
-            userCurrent.setEmail(user.getEmail());
+            userCurrent.setAddress(user.getAddress());
             userCurrent.setName(user.getName());
-            userCurrent.setPassword(user.getPassword());
-            userRepository.save(userCurrent);
+            userCurrent.setGender(user.getGender());
+            userCurrent.setAge(user.getAge());
+
+            userCurrent = this.userRepository.save(userCurrent);
         }
         return userCurrent;
     }
 
     public User handleGetUserByUserName(String username) {
         return this.userRepository.findByEmail(username);
+    }
+
+    public boolean isEmailExist(String email) {
+        return this.userRepository.existsByEmail(email);
+    }
+
+    public ResCreateUserDTO convertToResCreateUserDTO(User rqUser) {
+        ResCreateUserDTO resCreateUserDTO = new ResCreateUserDTO();
+        resCreateUserDTO.setId(rqUser.getId());
+        resCreateUserDTO.setAge(rqUser.getAge());
+        resCreateUserDTO.setAddress(rqUser.getAddress());
+        resCreateUserDTO.setCreatedAt(rqUser.getCreatedAt());
+        resCreateUserDTO.setEmail(rqUser.getEmail());
+        resCreateUserDTO.setName(rqUser.getName());
+        resCreateUserDTO.setGender(rqUser.getGender());
+        return resCreateUserDTO;
+    }
+
+    public ResUserDTO convertToResUserDTO(User fetchUser) {
+        ResUserDTO resUserDTO = new ResUserDTO();
+        resUserDTO.setId(fetchUser.getId());
+        resUserDTO.setAge(fetchUser.getAge());
+        resUserDTO.setAddress(fetchUser.getAddress());
+        resUserDTO.setCreatedAt(fetchUser.getCreatedAt());
+        resUserDTO.setEmail(fetchUser.getEmail());
+        resUserDTO.setName(fetchUser.getName());
+        resUserDTO.setGender(fetchUser.getGender());
+        resUserDTO.setUpdatedAt(fetchUser.getUpdatedAt());
+
+        return resUserDTO;
+    }
+
+    public ResUpdateUserDTO convertToResUpdateUserDTO(User fetchUser) {
+        ResUpdateUserDTO rDto = new ResUpdateUserDTO();
+        rDto.setId(fetchUser.getId());
+        rDto.setAge(fetchUser.getAge());
+        rDto.setAddress(fetchUser.getAddress());
+        rDto.setName(fetchUser.getName());
+        rDto.setGender(fetchUser.getGender());
+        rDto.setUpdatedAt(fetchUser.getUpdatedAt());
+        return rDto;
     }
 
 }

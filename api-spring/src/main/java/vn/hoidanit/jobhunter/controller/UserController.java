@@ -1,17 +1,5 @@
 package vn.hoidanit.jobhunter.controller;
 
-import org.springframework.web.bind.annotation.RestController;
-
-import com.turkraft.springfilter.boot.Filter;
-
-import vn.hoidanit.jobhunter.domain.User;
-import vn.hoidanit.jobhunter.domain.dto.ResultPaginationDTO;
-import vn.hoidanit.jobhunter.service.UserService;
-import vn.hoidanit.jobhunter.util.err.IdInvalidException;
-
-import java.util.Optional;
-
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
@@ -20,11 +8,25 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
+import com.turkraft.springfilter.boot.Filter;
+
+import jakarta.validation.Valid;
+import vn.hoidanit.jobhunter.domain.User;
+import vn.hoidanit.jobhunter.domain.dto.ResCreateUserDTO;
+import vn.hoidanit.jobhunter.domain.dto.ResUpdateUserDTO;
+import vn.hoidanit.jobhunter.domain.dto.ResUserDTO;
+import vn.hoidanit.jobhunter.domain.dto.ResultPaginationDTO;
+import vn.hoidanit.jobhunter.service.UserService;
+import vn.hoidanit.jobhunter.util.annotation.ApiMessage;
+import vn.hoidanit.jobhunter.util.err.IdInvalidException;
+
+@RequestMapping("/api/v1")
 @RestController
 public class UserController {
     private final UserService userService;
@@ -36,29 +38,40 @@ public class UserController {
         this.passwordEncoder = passwordEncoder;
     }
 
-    // @GetMapping("/users/create")
     @PostMapping("/users")
-    public ResponseEntity<User> createNewUser(@RequestBody User user) {
-        String hashPassword = this.passwordEncoder.encode(user.getPassword());
-        user.setPassword(hashPassword);
-        User userNew = userService.handleCreateUser(user);
-        return ResponseEntity.status(HttpStatus.CREATED).body(userNew);
+    @ApiMessage("Create new user")
+    public ResponseEntity<ResCreateUserDTO> createNewUser(@Valid @RequestBody User rqUser) throws IdInvalidException {
+        boolean isEmailExist = this.userService.isEmailExist(rqUser.getEmail());
+        if (isEmailExist) {
+            throw new IdInvalidException("Email " + rqUser.getEmail() + " da ton tai, vui long su dung email khac");
+        }
+        String hashPassword = this.passwordEncoder.encode(rqUser.getPassword());
+        rqUser.setPassword(hashPassword);
+        userService.handleCreateUser(rqUser);
+        return ResponseEntity.status(HttpStatus.CREATED).body(this.userService.convertToResCreateUserDTO(rqUser));
     }
 
     @DeleteMapping("/users/{id}")
-    public ResponseEntity<Void> deleteUserById(@PathVariable(name = "id") Long id) throws IdInvalidException {
-        if (id > 1500) {
-            throw new IdInvalidException("Id khong lon hon 1500");
+    @ApiMessage("Delete a user")
+    public ResponseEntity<Void> deleteUserById(@PathVariable(name = "id") long id) throws IdInvalidException {
+        User currentUser = this.userService.fetchUserById(id);
+        if (currentUser == null) {
+            throw new IdInvalidException("User voi id = " + id + " khong ton tai");
         }
 
-        userService.deleteUserById(id);
-        return ResponseEntity.noContent().build();
+        this.userService.deleteUserById(id);
+        return ResponseEntity.ok().build();
     }
 
     @GetMapping("/users/{user-id}")
-    public ResponseEntity<User> fetchUserById(@PathVariable(name = "user-id") Long userId) {
-        User user = userService.fetchUserById(userId);
-        return ResponseEntity.status(HttpStatus.OK).body(user);
+    @ApiMessage("Fetch user by id")
+    public ResponseEntity<ResUserDTO> fetchUserById(@PathVariable(name = "user-id") long userId)
+            throws IdInvalidException {
+        User fetchUser = userService.fetchUserById(userId);
+        if (fetchUser == null) {
+            throw new IdInvalidException("User voi id = " + userId + "khong ton tai");
+        }
+        return ResponseEntity.status(HttpStatus.OK).body(this.userService.convertToResUserDTO(fetchUser));
     }
 
     // @GetMapping("/users")
@@ -77,15 +90,20 @@ public class UserController {
     // }
 
     @GetMapping("/users")
-    public ResponseEntity<ResultPaginationDTO> fetchAllUserBySpecification(
+    @ApiMessage("fetch all user")
+    public ResponseEntity<ResultPaginationDTO> fetchAllUser(
             @Filter Specification<User> spec, Pageable pageable) {
         return ResponseEntity.status(HttpStatus.OK).body(this.userService.fetchAllUser(spec, pageable));
     }
 
     @PutMapping("/users")
-    public ResponseEntity<User> updateUserById(@RequestBody User user) {
-        User userUpdate = userService.handleUpdateUser(user);
-        return ResponseEntity.ok(userUpdate);
+    @ApiMessage("Update user by Id")
+    public ResponseEntity<ResUpdateUserDTO> updateUserById(@RequestBody User rqUser) throws IdInvalidException {
+        User userUpdate = userService.handleUpdateUser(rqUser);
+        if (rqUser == null) {
+            throw new IdInvalidException("User voi id = " + rqUser.getId() + " khong ton tai");
+        }
+        return ResponseEntity.ok(this.userService.convertToResUpdateUserDTO(userUpdate));
     }
 
 }
