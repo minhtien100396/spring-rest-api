@@ -143,4 +143,16 @@ public class UserService {
         return rDto;
     }
 
+    public void updateUserToken(String email, String token) {
+        User currentUser = this.handleGetUserByUserName(email);
+        if (currentUser != null) {
+            currentUser.setRefreshToken(token);
+            this.userRepository.save(currentUser);
+        }
+    }
+
+    public User getUserByRefreshTokenAndEmail(String token, String email) {
+        return this.userRepository.findByRefreshTokenAndEmail(token, email);
+    }
+
 }

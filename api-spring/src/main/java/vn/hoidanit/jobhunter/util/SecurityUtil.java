@@ -2,7 +2,12 @@ package vn.hoidanit.jobhunter.util;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
+
+import javax.crypto.SecretKey;
+import javax.crypto.spec.SecretKeySpec;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
@@ -15,7 +20,12 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtClaimsSet;
 import org.springframework.security.oauth2.jwt.JwtEncoder;
 import org.springframework.security.oauth2.jwt.JwtEncoderParameters;
+import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.stereotype.Service;
+
+import com.nimbusds.jose.util.Base64;
+
+import vn.hoidanit.jobhunter.domain.dto.ResLoginDTO;
 
 @Service
 public class SecurityUtil {
@@ -26,20 +36,34 @@ public class SecurityUtil {
         this.jwtEncoder = jwtEncoder;
     }
 
-    @Value("${hoidanit.jwt.token-validity-in-seconds}")
-    private long jwtKeyExpiration;
+    @Value("${hoidanit.jwt.base64-secret}")
+    private String jwtKey;
 
-    public String createToken(Authentication authentication) {
+    @Value("${hoidanit.jwt.access-token-validity-in-seconds}")
+    private long accessTokenExpiration;
+
+    @Value("${hoidanit.jwt.refresh-token-validity-in-seconds}")
+    private long refreshTokenExpiration;
+
+    // Dung de xac thuc nguoi dung -> thoi gian sang ngan
+    public String createAccessToken(String email, ResLoginDTO.UserLogin dto) {
         // Instant: thao tac voi time trong java
         // Lấy thời gian hiện tại (thời điểm token được tạo).
         Instant now = Instant.now();
 
         // có nghĩa là tính toán thời điểm hết hạn (expiration time) của token dựa trên
-        // giá trị jwtKeyExpiration
-        // Cộng thêm một khoảng thời gian (jwtKeyExpiration giây) vào thời điểm hiện tại
+        // giá trị accessTokenExpiration
+        // Cộng thêm một khoảng thời gian (accessTokenExpiration giây) vào thời điểm
+        // hiện tại
         // (now).
-        Instant validity = now.plus(this.jwtKeyExpiration, ChronoUnit.SECONDS); // ChronoUnit.SECONDS: Định nghĩa đơn vị
-                                                                                // là giây.
+        // ChronoUnit.SECONDS: Định nghĩa đơn vị là giây.
+        Instant validity = now.plus(this.accessTokenExpiration, ChronoUnit.SECONDS);
+
+        // hardcode permission (for testing)
+        List<String> listAuthority = new ArrayList<String>();
+
+        listAuthority.add("ROLE_USER_CREATE");
+        listAuthority.add("ROLE_USER_UPDATE");
 
         // @formatter:off
         //JwtClaimsSet.builder(): Tạo một builder để thiết lập các claims (thông tin) cho JWT.
@@ -50,9 +74,10 @@ public class SecurityUtil {
             //Đặt thời điểm hết hạn
             .expiresAt(validity)
             //Thiết lập chủ thể (subject) của token
-            .subject(authentication.getName())
+            .subject(email)
             //có thể chứa thông tin chi tiết về user.
-            .claim("hoidanit", authentication)
+            .claim("user", dto)
+            .claim("permission", listAuthority)
             .build();
             
         //Tao Header: Header chứa thông tin về thuật toán mã hóa và loại token.
@@ -61,12 +86,42 @@ public class SecurityUtil {
         
     }
 
-    
-    /**
-     * Get the login of the current user.
-     *
-     * @return the login of the current user.
-     */
+
+    //Duoc tao ra khi login -> Luu tru thong tin nguoi dung duoi dang cookie -> Thoi gian song dai
+    public String createRefrectToken(String email, ResLoginDTO res) {
+        Instant now = Instant.now();
+        Instant validity = now.plus(this.refreshTokenExpiration, ChronoUnit.SECONDS);
+            JwtClaimsSet claims = JwtClaimsSet.builder()
+            .issuedAt(now)
+            .expiresAt(validity)
+            .subject(email)
+            .claim("user", res.getUser())
+            .build();
+        JwsHeader jwsHeader = JwsHeader.with(JWT_ALGORITHM).build();
+        return this.jwtEncoder.encode(JwtEncoderParameters.from(jwsHeader,claims)).getTokenValue();
+        
+    }
+
+    private SecretKey getSecretKey() {
+        byte[] keyBytes = Base64.from(jwtKey).decode(); // Giai ma key tu Base64 sang byte
+
+        return new SecretKeySpec(keyBytes, 0, keyBytes.length, JWT_ALGORITHM.getName());
+    }
+
+    public Jwt checkValidRefreshToken(String token) {
+        NimbusJwtDecoder jwtDecoder = NimbusJwtDecoder.withSecretKey(
+                getSecretKey()).macAlgorithm(SecurityUtil.JWT_ALGORITHM).build();
+                try {
+                    return jwtDecoder.decode(token);
+                } catch (Exception e) {
+                    System.out.println(">>> Refresh token error: " + e.getMessage());
+                    throw e;
+                }
+
+    }
+
+
+    //Lay het thong tin User luu trong trong SecurityContextHolder bao gom ca phan quyen
     public static Optional<String> getCurrentUserLogin() {
         SecurityContext securityContext = SecurityContextHolder.getContext();
         return Optional.ofNullable(extractPrincipal(securityContext.getAuthentication()));
@@ -85,11 +140,8 @@ public class SecurityUtil {
         return null;
     }
 
-    /**
-     * Get the JWT of the current user.
-     *
-     * @return the JWT of the current user.
-     */
+    
+    //Lay theo thong tin luu tru trong token
     public static Optional<String> getCurrentUserJWT() {
         SecurityContext securityContext = SecurityContextHolder.getContext();
         return Optional.ofNullable(securityContext.getAuthentication())
