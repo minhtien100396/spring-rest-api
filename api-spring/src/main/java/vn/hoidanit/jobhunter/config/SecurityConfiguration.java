@@ -43,9 +43,15 @@ public class SecurityConfiguration {
             HttpSecurity http,
             CustomAuthenticationEntryPoint customAuthenticationEntryPoint) throws Exception {
         String[] whileList = {
-                "/", "/api/v1/auth/login", "/api/v1/auth/refresh", "/storage/**", "/api/v1/companies/**",
-                "/api/v1/jobs/**"
+                "/",
+                "/api/v1/auth/login",
+                "/api/v1/auth/refresh",
+                "/storage/**",
+                "/api/v1/companies/**",
+                "/api/v1/jobs/**",
+                "/api/v1/auth/register",
         };
+
         http
                 .csrf(c -> c.disable())
                 .cors(Customizer.withDefaults())

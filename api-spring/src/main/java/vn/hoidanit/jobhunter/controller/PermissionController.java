@@ -58,8 +58,12 @@ public class PermissionController {
         // check permission exists
         boolean isPermissionExist = this.permissionService.isPermissionExist(permission);
         if (isPermissionExist) {
-            throw new IdInvalidException("Permission da ton tai. Vui long update bang thong tin khac");
+            // check name permission exists
+            if (permissionOptional.get().getName().equals(permission.getName())) {
+                throw new IdInvalidException("Permission da ton tai. Vui long update bang thong tin khac");
+            }
         }
+
         // create new permission
         return ResponseEntity.ok().body(this.permissionService.update(permission));
     }

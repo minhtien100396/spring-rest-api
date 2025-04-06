@@ -55,10 +55,11 @@ public class RoleController {
             throw new IdInvalidException("Role voi Id = " + role.getId() + " khong ton tai");
         }
 
-        // check name exists
-        boolean isRoleNameExist = this.roleService.isRoleNameExist(role);
-        if (isRoleNameExist) {
-            throw new IdInvalidException("Role voi name = " + role.getName() + " da ton tai");
+        if (!roleOptional.get().getName().equals(role.getName())) {
+            boolean isRoleNameExist = this.roleService.isRoleNameExist(role);
+            if (isRoleNameExist) {
+                throw new IdInvalidException("Role voi name = " + role.getName() + " da ton tai");
+            }
         }
 
         // update role
@@ -82,5 +83,15 @@ public class RoleController {
 
         this.roleService.deleteRoleById(id);
         return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/roles/{id}")
+    @ApiMessage("Get Role By Id")
+    public ResponseEntity<Role> fetchRoleById(@PathVariable(name = "id") long id) throws IdInvalidException {
+        Optional<Role> currentRole = this.roleService.fetchById(id);
+        if (!currentRole.isPresent()) {
+            throw new IdInvalidException("Job voi id = " + id + " khong ton tai");
+        }
+        return ResponseEntity.ok().body(currentRole.get());
     }
 }

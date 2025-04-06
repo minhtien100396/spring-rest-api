@@ -14,6 +14,7 @@ import vn.hoidanit.jobhunter.domain.Role;
 import vn.hoidanit.jobhunter.domain.response.ResultPaginationDTO;
 import vn.hoidanit.jobhunter.repository.PermissionRepository;
 import vn.hoidanit.jobhunter.repository.RoleRepository;
+import vn.hoidanit.jobhunter.util.err.IdInvalidException;
 
 @Service
 public class RoleService {
@@ -47,7 +48,7 @@ public class RoleService {
         return this.roleRepository.findById(id);
     }
 
-    public Role update(Role rqRole) {
+    public Role update(Role rqRole) throws IdInvalidException {
 
         // check permission
         if (rqRole.getPermissions() != null) {
@@ -62,6 +63,9 @@ public class RoleService {
                 : null;
 
         if (roleDB != null) {
+            if (!rqRole.getName().equals(roleDB.getName())) {
+                roleDB.setName(rqRole.getName());
+            }
             roleDB.setName(rqRole.getName());
             roleDB.setDescription(rqRole.getDescription());
             roleDB.setActive(rqRole.isActive());

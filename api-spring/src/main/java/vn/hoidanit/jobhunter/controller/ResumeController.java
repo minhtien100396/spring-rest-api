@@ -30,6 +30,7 @@ import vn.hoidanit.jobhunter.util.err.IdInvalidException;
 @RestController
 @RequestMapping("/api/v1")
 public class ResumeController {
+
     private final ResumeService resumeService;
 
     public ResumeController(ResumeService resumeService) {
@@ -92,6 +93,13 @@ public class ResumeController {
     public ResponseEntity<ResultPaginationDTO> fetchAllResume(
             @Filter Specification<Resume> spec, Pageable pageable) {
         return ResponseEntity.status(HttpStatus.OK).body(this.resumeService.fetchAllResume(spec, pageable));
+    }
+
+    @PostMapping("/resumes/by-user")
+    @ApiMessage("Get List Resume By User")
+    public ResponseEntity<ResultPaginationDTO> fetchListResumeByUser(Pageable pageable) {
+
+        return ResponseEntity.ok().body(this.resumeService.fetchListResumeByUser(pageable));
     }
 
 }

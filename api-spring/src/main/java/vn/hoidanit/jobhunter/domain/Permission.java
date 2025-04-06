@@ -16,6 +16,7 @@ import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 import vn.hoidanit.jobhunter.util.SecurityUtil;
 
@@ -23,6 +24,7 @@ import vn.hoidanit.jobhunter.util.SecurityUtil;
 @Table(name = "permissions")
 @Getter
 @Setter
+@NoArgsConstructor
 public class Permission {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -71,4 +73,15 @@ public class Permission {
 
         this.updatedAt = Instant.now();
     }
+
+    public Permission(@NotBlank(message = "name khong duoc de trong") String name,
+            @NotBlank(message = "apiPath khong duoc de trong") String apiPath,
+            @NotBlank(message = "method khong duoc de trong") String method,
+            @NotBlank(message = "module khong duoc de trong") String module) {
+        this.name = name;
+        this.apiPath = apiPath;
+        this.method = method;
+        this.module = module;
+    }
+
 }

@@ -46,7 +46,12 @@ public class SecurityUtil {
     private long refreshTokenExpiration;
 
     // Dung de xac thuc nguoi dung -> thoi gian sang ngan
-    public String createAccessToken(String email, ResLoginDTO.UserLogin dto) {
+    public String createAccessToken(String email, ResLoginDTO dto) {
+        ResLoginDTO.UserInsideToken userToken = new ResLoginDTO.UserInsideToken();
+        userToken.setId(dto.getUser().getId());
+        userToken.setName(dto.getUser().getName());
+        userToken.setEmail(dto.getUser().getEmail());
+
         // Instant: thao tac voi time trong java
         // Lấy thời gian hiện tại (thời điểm token được tạo).
         Instant now = Instant.now();
@@ -76,7 +81,7 @@ public class SecurityUtil {
             //Thiết lập chủ thể (subject) của token
             .subject(email)
             //có thể chứa thông tin chi tiết về user.
-            .claim("user", dto)
+            .claim("user", userToken)
             .claim("permission", listAuthority)
             .build();
             
@@ -89,13 +94,19 @@ public class SecurityUtil {
 
     //Duoc tao ra khi login -> Luu tru thong tin nguoi dung duoi dang cookie -> Thoi gian song dai
     public String createRefrectToken(String email, ResLoginDTO res) {
+
+        ResLoginDTO.UserInsideToken userToken = new ResLoginDTO.UserInsideToken();
+        userToken.setId(res.getUser().getId());
+        userToken.setName(res.getUser().getName());
+        userToken.setEmail(res.getUser().getEmail());
+
         Instant now = Instant.now();
         Instant validity = now.plus(this.refreshTokenExpiration, ChronoUnit.SECONDS);
             JwtClaimsSet claims = JwtClaimsSet.builder()
             .issuedAt(now)
             .expiresAt(validity)
             .subject(email)
-            .claim("user", res.getUser())
+            .claim("user", userToken)
             .build();
         JwsHeader jwsHeader = JwsHeader.with(JWT_ALGORITHM).build();
         return this.jwtEncoder.encode(JwtEncoderParameters.from(jwsHeader,claims)).getTokenValue();
