@@ -1,6 +1,7 @@
 package vn.hoidanit.jobhunter.util;
 
 import org.springframework.core.MethodParameter;
+import org.springframework.core.io.Resource;
 import org.springframework.http.MediaType;
 import org.springframework.http.server.ServerHttpRequest;
 import org.springframework.http.server.ServerHttpResponse;
@@ -13,7 +14,7 @@ import vn.hoidanit.jobhunter.domain.response.RestResponse;
 import vn.hoidanit.jobhunter.util.annotation.ApiMessage;
 
 @ControllerAdvice
-public class FormartRestResponse implements ResponseBodyAdvice<Object> {
+public class FormatRestResponse implements ResponseBodyAdvice<Object> {
 
     @Override
     public boolean supports(MethodParameter returnType, Class converterType) {
@@ -37,7 +38,7 @@ public class FormartRestResponse implements ResponseBodyAdvice<Object> {
         res.setStatusCode(status);
 
         // Loi khi catch tu RestResponse sang String
-        if (body instanceof String) {
+        if (body instanceof String || body instanceof Resource) {
             return body;
         }
 

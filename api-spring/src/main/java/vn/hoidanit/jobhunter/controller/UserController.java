@@ -47,7 +47,7 @@ public class UserController {
         }
         String hashPassword = this.passwordEncoder.encode(rqUser.getPassword());
         rqUser.setPassword(hashPassword);
-        userService.handleCreateUser(rqUser);
+        this.userService.handleCreateUser(rqUser);
         return ResponseEntity.status(HttpStatus.CREATED).body(this.userService.convertToResCreateUserDTO(rqUser));
     }
 
@@ -101,7 +101,7 @@ public class UserController {
     public ResponseEntity<ResUpdateUserDTO> updateUserById(@RequestBody User rqUser) throws IdInvalidException {
         User userUpdate = userService.handleUpdateUser(rqUser);
         if (rqUser == null) {
-            throw new IdInvalidException("User voi id = " + rqUser.getId() + " khong ton tai");
+            throw new IdInvalidException("User khong ton tai");
         }
         return ResponseEntity.ok(this.userService.convertToResUpdateUserDTO(userUpdate));
     }

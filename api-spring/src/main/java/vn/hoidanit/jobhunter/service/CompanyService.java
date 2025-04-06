@@ -1,5 +1,6 @@
 package vn.hoidanit.jobhunter.service;
 
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.domain.Page;
@@ -8,6 +9,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
 import vn.hoidanit.jobhunter.domain.Company;
+import vn.hoidanit.jobhunter.domain.User;
 import vn.hoidanit.jobhunter.domain.response.ResultPaginationDTO;
 import vn.hoidanit.jobhunter.repository.CompanyRepository;
 import vn.hoidanit.jobhunter.repository.UserRepository;
@@ -61,7 +63,18 @@ public class CompanyService {
     }
 
     public void deleteCompany(long idCompany) {
-        this.companyRepository.deleteById((int) idCompany);
+        Optional<Company> comOptional = this.companyRepository.findById(idCompany);
+        if (comOptional.isPresent()) {
+            Company company = comOptional.get();
+            // Fetch all user belong to this company
+            List<User> users = this.userRepository.findByCompany(company);
+            this.userRepository.deleteAll(users);
+        }
+        this.companyRepository.deleteById(idCompany);
+    }
+
+    public Optional<Company> fetchCompanyById(long id) {
+        return this.companyRepository.findById(id);
     }
 
 }

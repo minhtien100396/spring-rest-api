@@ -10,9 +10,9 @@ public class Hello {
     @GetMapping("/")
     public String geString() throws IdInvalidException {
         if (true) {
-            throw new IdInvalidException("Tiena");
+            throw new IdInvalidException("Invalid");
         }
-        return "Tien";
+        return "Invalid";
 
     }
 }
